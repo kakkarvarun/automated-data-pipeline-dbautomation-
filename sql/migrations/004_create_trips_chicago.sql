@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS trips_chicago (
+  trip_id BIGINT PRIMARY KEY,
+  trip_start_timestamp DATETIME,
+  trip_end_timestamp DATETIME,
+  trip_seconds INT,
+  trip_miles DECIMAL(10,2),
+  pickup_census_tract BIGINT,
+  dropoff_census_tract BIGINT,
+  pickup_community_area INT,
+  dropoff_community_area INT,
+  fare DECIMAL(10,2),
+  tips DECIMAL(10,2),
+  tolls DECIMAL(10,2),
+  extras DECIMAL(10,2),
+  trip_total DECIMAL(10,2),
+  payment_type VARCHAR(50),
+  company VARCHAR(255),
+  pickup_latitude DECIMAL(9,6),
+  pickup_longitude DECIMAL(9,6),
+  dropoff_latitude DECIMAL(9,6),
+  dropoff_longitude DECIMAL(9,6)
+);

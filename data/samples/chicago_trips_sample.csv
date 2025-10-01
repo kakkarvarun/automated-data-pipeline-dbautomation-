@@ -1,0 +1,4 @@
+trip_id,trip_start_timestamp,trip_end_timestamp,trip_seconds,trip_miles,pickup_census_tract,dropoff_census_tract,pickup_community_area,dropoff_community_area,fare,tips,tolls,extras,trip_total,payment_type,company,pickup_latitude,pickup_longitude,dropoff_latitude,dropoff_longitude
+1,2019-01-01 08:01:00,2019-01-01 08:21:30,1230,5.2,17031010100,17031010200,8,32,14.75,2.5,0.0,1.0,18.25,Credit Card,Flash Cab,41.8921,-87.626,41.8781,-87.6298
+2,2019-01-02 14:12:10,2019-01-02 14:33:40,1290,6.1,17031030100,17031030200,32,6,17.8,0.0,0.0,0.5,18.3,Cash,City Service,41.8785,-87.6352,41.9002,-87.6237
+3,2019-01-03 22:05:00,2019-01-03 22:27:45,1365,4.7,17031839100,17031839200,3,3,13.6,1.5,0.0,0.0,15.1,Credit Card,Checker Taxi,41.975,-87.6685,41.968,-87.6596
