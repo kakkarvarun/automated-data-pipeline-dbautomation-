@@ -2,6 +2,7 @@
 import os, argparse, time, psutil
 import pandas as pd, mysql.connector
 from dotenv import load_dotenv
+import numpy as np
 
 load_dotenv()
 
@@ -25,45 +26,54 @@ cfg = dict(
 
 # Input->DB mapping (starter columns)
 mapping = {
-    "trip_id": "trip_id",
-    "trip_start_timestamp": "trip_start_timestamp",
-    "trip_end_timestamp": "trip_end_timestamp",
-    "trip_seconds": "trip_seconds",
-    "trip_miles": "trip_miles",
-    "pickup_census_tract": "pickup_census_tract",
-    "dropoff_census_tract": "dropoff_census_tract",
-    "pickup_community_area": "pickup_community_area",
-    "dropoff_community_area": "dropoff_community_area",
-    "fare": "fare",
-    "tips": "tips",
-    "tolls": "tolls",
-    "extras": "extras",
-    "trip_total": "trip_total",
-    "payment_type": "payment_type",
-    "company": "company",
-    "pickup_latitude": "pickup_latitude",
-    "pickup_longitude": "pickup_longitude",
-    "dropoff_latitude": "dropoff_latitude",
-    "dropoff_longitude": "dropoff_longitude",
+    # CSV header -------------------------> DB column
+    "Trip ID": "trip_id",
+    "Trip Start Timestamp": "trip_start_timestamp",
+    "Trip End Timestamp": "trip_end_timestamp",
+    "Trip Seconds": "trip_seconds",
+    "Trip Miles": "trip_miles",
+    "Pickup Census Tract": "pickup_census_tract",
+    "Dropoff Census Tract": "dropoff_census_tract",
+    "Pickup Community Area": "pickup_community_area",
+    "Dropoff Community Area": "dropoff_community_area",
+    "Fare": "fare",
+    "Tips": "tips",
+    "Tolls": "tolls",
+    "Extras": "extras",
+    "Trip Total": "trip_total",
+    "Payment Type": "payment_type",
+    "Company": "company",
+    "Pickup Centroid Latitude": "pickup_latitude",
+    "Pickup Centroid Longitude": "pickup_longitude",
+    "Dropoff Centroid Latitude": "dropoff_latitude",
+    "Dropoff Centroid Longitude": "dropoff_longitude",
 }
 
 def coerce_types(df: pd.DataFrame) -> pd.DataFrame:
-    # datetimes
-    for col in ["trip_start_timestamp","trip_end_timestamp"]:
+    # Datetime columns (most Chicago files are 'YYYY-MM-DD HH:MM:SS')
+    for col in ["trip_start_timestamp", "trip_end_timestamp"]:
         if col in df.columns:
-            df[col] = pd.to_datetime(df[col], errors="coerce")
-    # numeric coercion
-    numeric_cols = ["trip_seconds","trip_miles","pickup_census_tract","dropoff_census_tract",
-                    "pickup_community_area","dropoff_community_area","fare","tips","tolls","extras","trip_total",
-                    "pickup_latitude","pickup_longitude","dropoff_latitude","dropoff_longitude"]
+            df[col] = pd.to_datetime(df[col], errors="coerce", format="%Y-%m-%d %H:%M:%S")
+            # convert to Python datetime for mysql-connector
+            df[col] = df[col].dt.to_pydatetime()
+
+    # Numeric coercion
+    numeric_cols = [
+        "trip_seconds","trip_miles","pickup_census_tract","dropoff_census_tract",
+        "pickup_community_area","dropoff_community_area","fare","tips","tolls","extras","trip_total",
+        "pickup_latitude","pickup_longitude","dropoff_latitude","dropoff_longitude"
+    ]
     for col in numeric_cols:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
-    # strip strings
+
+    # Strip strings
     for col in ["payment_type","company"]:
         if col in df.columns:
             df[col] = df[col].astype(str).str.strip()
+
     return df
+
 
 cn = mysql.connector.connect(**cfg)
 cur = cn.cursor()
@@ -87,10 +97,15 @@ ON DUPLICATE KEY UPDATE
 
 # Stream CSV in chunks
 for i, chunk in enumerate(pd.read_csv(csv_path, chunksize=chunksize), start=1):
+    chunk.columns = [c.strip() for c in chunk.columns]
+
     df = chunk.rename(columns=mapping)
-    df = df[[c for c in mapping.values() if c in df.columns]]  # keep only mapped cols
+    df = df[[c for c in mapping.values() if c in df.columns]]
     df = coerce_types(df)
-    df = df.dropna(subset=["trip_id"])  # essential key
+    # ⬇️ add these two lines right HERE
+    df.replace({np.nan: None}, inplace=True)  # convert float NaN to None (NULL)
+    df = df.where(pd.notnull(df), None)       # also handles pandas NA/NaT robustly
+    df = df.dropna(subset=["trip_id"])  # essential key (keep this after the replace)
 
     rows = df.reindex(columns=list(mapping.values())).values.tolist()
     if not rows:
