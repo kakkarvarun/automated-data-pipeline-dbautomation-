@@ -55,7 +55,8 @@ def coerce_types(df: pd.DataFrame) -> pd.DataFrame:
         if col in df.columns:
             df[col] = pd.to_datetime(df[col], errors="coerce", format="%Y-%m-%d %H:%M:%S")
             # convert to Python datetime for mysql-connector
-            df[col] = df[col].dt.to_pydatetime()
+            df[col] = df[col].apply(lambda x: x.to_pydatetime() if pd.notna(x) else None)
+
 
     # Numeric coercion
     numeric_cols = [
