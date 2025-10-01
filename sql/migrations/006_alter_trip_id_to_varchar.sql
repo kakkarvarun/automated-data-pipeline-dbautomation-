@@ -1,0 +1,2 @@
+USE companydb;
+ALTER TABLE trips_chicago DROP PRIMARY KEY, MODIFY COLUMN trip_id VARCHAR(64) NOT NULL, ADD PRIMARY KEY (trip_id);
