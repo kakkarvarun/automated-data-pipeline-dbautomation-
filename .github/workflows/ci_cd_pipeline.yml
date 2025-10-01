@@ -8,15 +8,15 @@ on:
 jobs:
   test-db:
     runs-on: ubuntu-latest
+
     services:
       mysql:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: companydb
-          MYSQL_USER: automation
-          MYSQL_PASSWORD: pass
-        ports: ["3306:3306"]
+        ports:
+          - 3306:3306
         options: >-
           --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
           --health-interval=10s --health-timeout=5s --health-retries=10
@@ -26,29 +26,26 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
-      - name: Install deps
+      - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
-          pip install mysql-connector-python python-dotenv pandas
+          pip install -r requirements.txt
 
-      - name: Wait for MySQL
+      - name: Create DB user matching .env.example
         run: |
-          for i in `seq 1 30`; do
-            (echo "SELECT 1;" | mysql -h127.0.0.1 -uroot -proot) && break
-            sleep 2
-          done
+          mysql -h127.0.0.1 -uroot -proot -e "CREATE USER IF NOT EXISTS 'automation'@'%' IDENTIFIED BY 'pass'; GRANT ALL PRIVILEGES ON companydb.* TO 'automation'@'%'; FLUSH PRIVILEGES;"
 
-      - name: Use CI env
+      - name: Prepare .env
         run: |
           cp .env.example .env
           sed -i 's/MYSQL_HOST=.*/MYSQL_HOST=127.0.0.1/' .env
 
-      - name: Run migrations
+      - name: Run migrations (001..005)
         run: python scripts/run_migrations.py
 
-      - name: Load sample data
+      - name: Load sample data (idempotent)
         run: python scripts/load_trips_chicago.py --sample
 
       - name: Assert schema
