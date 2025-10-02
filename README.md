@@ -1,7 +1,8 @@
 # PROG8850 — Assignment 2 (Chicago Taxi Trips)
 
-Automate **database schema migrations** and **CI/CD** with the City of Chicago **Taxi Trips** open dataset.
-Students work **locally** for big-file ingestion and push to **GitHub** where CI runs a small sample.
+Prereqs (Docker, Python)
+
+Local run:
 
 ## Dataset
 - Source: City of Chicago Data Portal — "Taxi Trips"
@@ -31,39 +32,12 @@ Students work **locally** for big-file ingestion and push to **GitHub** where CI
 ```
 
 ## Quick Start (Local)
-1. Install MySQL 8 (or MariaDB 10.6+) and create DB/user:
-   ```sql
-   CREATE DATABASE companydb;
-   CREATE USER 'automation'@'%' IDENTIFIED BY 'pass';
-   GRANT ALL PRIVILEGES ON companydb.* TO 'automation'@'%';
-   FLUSH PRIVILEGES;
-   ```
+ 1) start DB + create user
+ 2) python scripts/run_migrations.py
+ 3) python scripts/load_trips_chicago.py --sample    # proof
+ 4) python scripts/load_trips_chicago.py             # big file (set TRIPS_CSV)
+ 5) python scripts/backup_script.py
 
-2. Python env and deps:
-   ```bash
-   python -m venv .venv
-   # Windows: .venv\Scripts\activate
-   # macOS/Linux:
-   source .venv/bin/activate
-   pip install mysql-connector-python python-dotenv pandas
-   cp .env.example .env
-   ```
-   - (Optional) Set `TRIPS_CSV` in `.env` to your local monthly CSV path.
-
-3. Run migrations twice to prove idempotency:
-   ```bash
-   python scripts/run_migrations.py
-   python scripts/run_migrations.py
-   ```
-
-4. Load data:
-   - **CI-sized sample**: `python scripts/load_trips_chicago.py --sample`
-   - **Full local file** (set `TRIPS_CSV` first): `python scripts/load_trips_chicago.py`
-
-5. Verify:
-   ```bash
-   python scripts/verify_counts.py --expect-min 1
-   ```
 
 ## GitHub CI/CD
 - On push/PR, GitHub Actions starts a MySQL service, runs migrations, loads the **sample** file,
